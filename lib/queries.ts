@@ -15,7 +15,9 @@ import {
   settlements,
   venues,
   type Recoup,
+  type DealRecoup,
 } from "@/db/schema";
+import { parseDealRecoups } from "@/lib/dealMath";
 import { desc, asc, eq, sql, lte } from "drizzle-orm";
 
 function todayDateString(): string {
@@ -89,12 +91,15 @@ export async function getShowById(id: string) {
     }
   }
 
+  const dealRecoups: DealRecoup[] = row.deal ? parseDealRecoups(row.deal) : [];
+
   return {
     ...row,
     ticketSales: showTicketSales,
     expenses: showExpenses,
     comps: showComps,
     recoups,
+    dealRecoups,
   };
 }
 
@@ -146,7 +151,7 @@ export async function getReports() {
   }
 
   const totalDeals = pastDeals.length;
-  const supportedTypes = ["flat", "percentage_of_gross"];
+  const supportedTypes = ["flat", "percentage_of_gross", "percentage_of_net", "vs", "door"];
   const supportedCount = pastDeals.filter((d) =>
     supportedTypes.includes(d.dealType),
   ).length;

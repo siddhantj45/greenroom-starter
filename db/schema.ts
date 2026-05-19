@@ -123,6 +123,7 @@ export const deals = sqliteTable("deals", {
   hospitalityCap: real("hospitality_cap"),
 
   bonusesJson: text("bonuses_json"),
+  dealRecoupsJson: text("deal_recoups_json"),
   dealNotesFreetext: text("deal_notes_freetext"),
 
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
@@ -330,6 +331,20 @@ export type Recoup = {
   label: string;
   amount: number;
   status: "agreed" | "disputed" | "withdrawn";
+  insideExpenseCap?: boolean; // present when deal term was structured; absent for legacy rows
+};
+
+export type DealRecoup = {
+  id: string;
+  category:
+    | "marketing"
+    | "hospitality_overage"
+    | "production_overage"
+    | "damages"
+    | "other";
+  label: string;
+  amount: number;
+  insideExpenseCap: boolean; // true = within expense cap; false = off gross before cap
 };
 
 export type SettlementStage = Settlement["status"];

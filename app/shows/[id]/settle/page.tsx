@@ -22,12 +22,13 @@ import {
   Field,
 } from "@/components/ui/card";
 import { StatusBadge, DealTypeBadge, PlainBadge } from "@/components/ui/badge";
-import { calculateSettlement } from "@/lib/dealMath";
+import { Button } from "@/components/ui/button";
+import { calculateSettlement, parseDealRecoups } from "@/lib/dealMath";
 import {
   formatMoney,
   formatShowDateFull,
 } from "@/lib/format";
-import type { Settlement, Recoup } from "@/db/schema";
+import type { Settlement, Recoup, DealRecoup } from "@/db/schema";
 import { Logomark } from "@/components/brand/logo";
 
 const RECOUP_LABELS: Record<Recoup["category"], string> = {
@@ -62,11 +63,14 @@ export default async function SettlePage({
     );
   }
 
+  const dealRecoups = parseDealRecoups(deal);
+
   const calc = calculateSettlement({
     deal,
     ticketSales,
     expenses,
     venueCapacity: data.venue?.capacity ?? undefined,
+    dealRecoups,
   });
   const grossSoFar = ticketSales.reduce((sum, t) => sum + t.gross, 0);
   const totalFees = ticketSales.reduce((sum, t) => sum + t.fees, 0);
@@ -627,30 +631,51 @@ function RecoupsSection({ recoups }: { recoups: Recoup[] }) {
       </CardHeader>
       <CardContent className="divide-y divide-ink-100/80">
         {recoups.map((r) => (
-          <div
-            key={r.id}
-            className="py-3.5 grid grid-cols-[1fr_auto_auto] items-center gap-3"
-          >
-            <div className="min-w-0">
-              <div className="text-[13px] text-ink-900 leading-tight">
-                {r.label}
+          <div key={r.id}>
+            <div className="py-3.5 grid grid-cols-[1fr_auto_auto_auto] items-center gap-3">
+              <div className="min-w-0">
+                <div className="text-[13px] text-ink-900 leading-tight">
+                  {r.label}
+                </div>
+                <div className="text-[11.5px] text-ink-400 mt-0.5">
+                  {RECOUP_LABELS[r.category]}
+                </div>
               </div>
-              <div className="text-[11.5px] text-ink-400 mt-0.5">
-                {RECOUP_LABELS[r.category]}
+              <div>
+                {r.insideExpenseCap === true ? (
+                  <PlainBadge variant="amber">inside cap</PlainBadge>
+                ) : r.insideExpenseCap === false ? (
+                  <PlainBadge variant="rose">off gross</PlainBadge>
+                ) : null}
+              </div>
+              <div>
+                {r.status === "disputed" ? (
+                  <PlainBadge variant="rose">Disputed</PlainBadge>
+                ) : r.status === "withdrawn" ? (
+                  <PlainBadge variant="default">Withdrawn</PlainBadge>
+                ) : (
+                  <PlainBadge variant="brand">Agreed</PlainBadge>
+                )}
+              </div>
+              <div className="text-[13.5px] font-mono tabular text-ink-900 text-right min-w-[80px]">
+                {formatMoney(r.amount)}
               </div>
             </div>
-            <div>
-              {r.status === "disputed" ? (
-                <PlainBadge variant="rose">Disputed</PlainBadge>
-              ) : r.status === "withdrawn" ? (
-                <PlainBadge variant="default">Withdrawn</PlainBadge>
-              ) : (
-                <PlainBadge variant="brand">Agreed</PlainBadge>
-              )}
-            </div>
-            <div className="text-[13.5px] font-mono tabular text-ink-900 text-right min-w-[80px]">
-              {formatMoney(r.amount)}
-            </div>
+            {r.status === "disputed" && (
+              <div className="mb-3 rounded-lg bg-rose-50/50 ring-1 ring-rose-200/60 p-4">
+                <div className="eyebrow text-[10px] text-rose-800 mb-2">
+                  Dispute detail
+                </div>
+                <p className="text-[12.5px] text-ink-800 leading-relaxed">
+                  This line item has been flagged by the artist team. The
+                  settlement cannot be finalized until this recoup is resolved.
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <Button variant="outline" size="sm">Withdraw recoup</Button>
+                  <Button variant="secondary" size="sm">Revise &amp; resubmit</Button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </CardContent>

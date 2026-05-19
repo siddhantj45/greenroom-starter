@@ -6,6 +6,7 @@ import {
   AlertCircle,
   Clock,
   TrendingUp,
+  Receipt,
 } from "lucide-react";
 import { getShowById } from "@/lib/queries";
 import {
@@ -18,14 +19,14 @@ import {
 } from "@/components/ui/card";
 import { StatusBadge, DealTypeBadge, PlainBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { parseBonuses } from "@/lib/dealMath";
+import { parseBonuses, parseDealRecoups } from "@/lib/dealMath";
 import {
   formatMoney,
   formatMoneyCompact,
   formatShowDateFull,
   relativeShowDate,
 } from "@/lib/format";
-import type { Bonus } from "@/db/schema";
+import type { Bonus, DealRecoup } from "@/db/schema";
 
 const COMP_LABELS: Record<string, string> = {
   artist_gl: "Artist guest list",
@@ -74,6 +75,7 @@ export default async function ShowDetailPage({
     .reduce((s, c) => s + c.count, 0);
 
   const bonuses = deal ? parseBonuses(deal) : [];
+  const dealRecoups = deal ? parseDealRecoups(deal) : [];
 
   const isDisputed = settlement?.status === "disputed";
 
@@ -207,6 +209,10 @@ export default async function ShowDetailPage({
                       }
                     />
                   </div>
+
+                  {dealRecoups.length > 0 && (
+                    <DealRecoupsBlock recoups={dealRecoups} expenseCap={deal.expenseCap} />
+                  )}
 
                   {bonuses.length > 0 && (
                     <div className="rounded-lg ring-1 ring-brand-200/50 bg-brand-50/20 p-4">
@@ -473,6 +479,49 @@ function MiniStat({
       <div className={`text-[18px] font-mono tabular font-semibold mt-0.5 leading-none ${accent ? "text-brand-700" : "text-ink-900"}`}>
         {value}
       </div>
+    </div>
+  );
+}
+
+function DealRecoupsBlock({
+  recoups,
+  expenseCap,
+}: {
+  recoups: DealRecoup[];
+  expenseCap: number | null | undefined;
+}) {
+  return (
+    <div className="rounded-lg ring-1 ring-amber-200/50 bg-amber-50/20 p-4">
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <Receipt className="h-3.5 w-3.5 text-amber-700" />
+        <div className="eyebrow text-[10px] text-amber-800">
+          Recoups &amp; off-the-tops
+        </div>
+      </div>
+      <ul className="space-y-2.5">
+        {recoups.map((r) => (
+          <li key={r.id} className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[12.5px] text-ink-800 leading-snug">{r.label}</div>
+              <div className="mt-1">
+                {r.insideExpenseCap ? (
+                  <PlainBadge variant="amber">
+                    inside {expenseCap != null ? formatMoney(expenseCap) : ""} cap
+                  </PlainBadge>
+                ) : (
+                  <PlainBadge variant="rose">off gross — above cap</PlainBadge>
+                )}
+              </div>
+            </div>
+            <span className="font-mono tabular text-[13px] text-ink-900 shrink-0 mt-0.5">
+              {formatMoney(r.amount)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-[11px] text-ink-400 mt-3 leading-snug">
+        Treatment locked at deal entry — no ambiguity at settlement.
+      </p>
     </div>
   );
 }

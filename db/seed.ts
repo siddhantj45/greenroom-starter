@@ -36,6 +36,7 @@ import {
   settlements,
   type Bonus,
   type Recoup,
+  type DealRecoup,
   type SettlementStage,
 } from "./schema";
 
@@ -1127,6 +1128,7 @@ async function main() {
           label: "Late-add: pre-show Instagram boost ($340)",
           amount: 340,
           status: "disputed",
+          insideExpenseCap: false,
         },
       ] as Recoup[]);
       target.notes =
@@ -1354,6 +1356,15 @@ async function main() {
         stacks: false,
       },
     ] as Bonus[]),
+    dealRecoupsJson: JSON.stringify([
+      {
+        id: `dealrecoup_${coastalShowId}_0`,
+        category: "marketing",
+        label: "Spotify pre-show ad spend",
+        amount: 900,
+        insideExpenseCap: true, // Daniel's (prevailing) interpretation — inside $2,500 cap
+      },
+    ] as DealRecoup[]),
     dealNotesFreetext:
       "$5,000 vs 80% of net after expenses, whichever greater. Expenses capped $2,500. Hospitality cap $500. +$1,000 bonus over $25k gross. Marketing recoup of $900 against gross. (Note added 3/19/25: this deal email was ambiguous — recoup interpretation disputed by WME, resolved with $720 concession.)",
     createdAt: coastalShowDate,
@@ -1402,6 +1413,7 @@ async function main() {
       label: "Spotify pre-show ad spend",
       amount: 900,
       status: "disputed",
+      insideExpenseCap: true,
     },
   ];
 
